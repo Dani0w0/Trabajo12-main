@@ -26,8 +26,9 @@ module.exports = function (app) {
           ]);
           
           // Obtener likes de ambas
-          const likes1 = getLikes(stock1, like && like[0] === 'true');
-          const likes2 = getLikes(stock2, like && like[1] === 'true');
+          const addLike = like === 'true';
+          const likes1 = getLikes(stock1, addLike, req.ip);
+          const likes2 = getLikes(stock2, addLike, req.ip);
           
           res.json({
             stockData: [
@@ -52,8 +53,7 @@ module.exports = function (app) {
         
         try {
           const data = await getStockPrice(stockSymbol);
-          const likesCount = getLikes(stockSymbol, like === 'true');
-          
+          const likesCount = getLikes(stockSymbol, like === 'true', req.ip);          
           res.json({
             stockData: {
               stock: stockSymbol,
@@ -95,14 +95,18 @@ async function getStockPrice(symbol) {
 }
 
 // Función para manejar likes
-function getLikes(stockSymbol, addLike) {
+function getLikes(stockSymbol, addLike, ip) {
   if (!likesStorage[stockSymbol]) {
-    likesStorage[stockSymbol] = 0;
+    likesStorage[stockSymbol] = {
+      likes: 0,
+      ips: []
+    };
   }
-  
-  if (addLike) {
-    likesStorage[stockSymbol]++;
+
+  if (addLike && !likesStorage[stockSymbol].ips.includes(ip)) {
+    likesStorage[stockSymbol].ips.push(ip);
+    likesStorage[stockSymbol].likes++;
   }
-  
-  return likesStorage[stockSymbol];
+
+  return likesStorage[stockSymbol].likes;
 }
